@@ -1,0 +1,42 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "activities": {
+      ".read": "auth != null || true",
+      "$activityId": {
+        ".write": "auth != null && (!data.exists() || data.child('hostId').val() === auth.uid)",
+        ".validate": "newData.hasChildren(['title', 'category', 'campus', 'location', 'hostId', 'startTime', 'status'])",
+        "title": {
+          ".validate": "newData.isString() && newData.val().length >= 3 && newData.val().length <= 60"
+        },
+        "description": {
+          ".validate": "newData.isString() && newData.val().length >= 10 && newData.val().length <= 500"
+        },
+        "campus": {
+          ".validate": "newData.val() === 'rose-hill' || newData.val() === 'lincoln-center'"
+        },
+        "participantCount": {
+          ".write": "auth != null",
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        },
+        "status": {
+          ".write": "auth != null",
+          ".validate": "newData.val() === 'active' || newData.val() === 'full' || newData.val() === 'canceled' || newData.val() === 'completed' || newData.val() === 'expired'"
+        }
+      }
+    },
+    "participants": {
+      "$activityId": {
+        ".read": "auth != null || true",
+        "$uid": {
+          ".write": "auth != null && (auth.uid === $uid || root.child('activities').child($activityId).child('hostId').val() === auth.uid)"
+        }
+      }
+    }
+  }
+}
