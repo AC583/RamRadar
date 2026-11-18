@@ -60,12 +60,14 @@ export async function joinActivity(
       return { success: false, error: 'Could not join activity. Please try again.' };
     }
 
-    // Now write the participant record
-    const participantRecord: ParticipantRecord = {
+    // Now write the participant record without undefined
+    const participantRecord: Record<string, any> = {
       joinedAt: Date.now(),
       displayName: user.displayName,
-      photoURL: user.photoURL || undefined,
     };
+    if (user.photoURL) {
+      participantRecord.photoURL = user.photoURL;
+    }
 
     await set(participantRef, participantRecord);
 

@@ -2,6 +2,7 @@ import { ref, get, set } from 'firebase/database';
 import { database, isFirebaseConfigured } from '../services/firebase';
 import { Activity } from '../types/activity';
 import { addHours, addDays } from 'date-fns';
+import { sanitizeFirebasePayload } from '../utils/clean';
 
 export const SAMPLE_ACTIVITIES: Omit<Activity, 'id' | 'createdAt'>[] = [
   // Rose Hill Activities
@@ -155,20 +156,22 @@ export async function seedDemoDataIfEmpty(): Promise<boolean> {
     for (let i = 0; i < SAMPLE_ACTIVITIES.length; i++) {
       const act = SAMPLE_ACTIVITIES[i];
       const newId = `demo-act-${i + 1}`;
-      const activityData: Activity = {
+      const activityData = sanitizeFirebasePayload({
         ...act,
         id: newId,
         createdAt: Date.now() - (i * 3600000),
-      };
+      });
 
       await set(ref(database, `activities/${newId}`), activityData);
 
       // Register host in participants
-      await set(ref(database, `participants/${newId}/${act.hostId}`), {
+      const hostRecord = sanitizeFirebasePayload({
         joinedAt: Date.now() - 3600000,
         displayName: act.hostName,
         photoURL: act.hostPhotoURL,
       });
+
+      await set(ref(database, `participants/${newId}/${act.hostId}`), hostRecord);
     }
 
     return true;

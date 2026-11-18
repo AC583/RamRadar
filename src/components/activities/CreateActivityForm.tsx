@@ -49,6 +49,21 @@ export const CreateActivityForm: React.FC<CreateActivityFormProps> = ({
     },
   });
 
+  React.useEffect(() => {
+    if (isOpen) {
+      reset({
+        campus: initialCampus,
+        category: 'study',
+        startDate: format(addHours(new Date(), 1), 'yyyy-MM-dd'),
+        startTime: format(addHours(new Date(), 1), 'HH:00'),
+        locationId: '',
+        title: '',
+        description: '',
+        customLocationDetails: '',
+      });
+    }
+  }, [isOpen, initialCampus, reset]);
+
   const selectedCampus = watch('campus');
   const availableLocations = CAMPUS_LOCATIONS.filter(
     (loc) => loc.campus === selectedCampus
@@ -113,6 +128,13 @@ export const CreateActivityForm: React.FC<CreateActivityFormProps> = ({
     }
   };
 
+  const onFormError = (formErrors: any) => {
+    const errorList = Object.values(formErrors) as any[];
+    if (errorList.length > 0 && errorList[0]?.message) {
+      toast.error(errorList[0].message);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -135,7 +157,7 @@ export const CreateActivityForm: React.FC<CreateActivityFormProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 overflow-y-auto space-y-4 flex-1">
+        <form onSubmit={handleSubmit(onSubmit, onFormError)} className="p-6 overflow-y-auto space-y-4 flex-1">
           {/* Title */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
@@ -263,7 +285,7 @@ export const CreateActivityForm: React.FC<CreateActivityFormProps> = ({
                 type="number"
                 min="2"
                 max="100"
-                {...register('maxParticipants', { valueAsNumber: true })}
+                {...register('maxParticipants')}
                 placeholder="Leave blank for unlimited capacity"
                 className="w-full pl-10 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-fordham-maroon/20 focus:border-fordham-maroon"
               />

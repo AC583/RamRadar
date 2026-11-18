@@ -11,6 +11,7 @@ import { database, isFirebaseConfigured } from './firebase';
 import { Activity, ActivityCategory } from '../types/activity';
 import { CampusId } from '../types/campus';
 import { UserProfile } from '../types/user';
+import { sanitizeFirebasePayload } from '../utils/clean';
 
 export async function createActivity(
   data: {
@@ -41,7 +42,7 @@ export async function createActivity(
     throw new Error('Failed to generate activity ID.');
   }
 
-  const newActivity: Activity = {
+  const newActivity: Partial<Activity> = {
     id: activityId,
     title: data.title.trim(),
     description: data.description.trim(),
@@ -50,25 +51,28 @@ export async function createActivity(
     location: data.location,
     hostId: host.uid,
     hostName: host.displayName,
-    hostPhotoURL: host.photoURL,
     startTime: data.startTime,
-    endTime: data.endTime,
-    maxParticipants: data.maxParticipants,
     status: 'active',
     createdAt: Date.now(),
     participantCount: 1, // Host is registered automatically
   };
 
-  // 1. Write the activity
-  await set(newActivityRef, newActivity);
+  if (host.photoURL) newActivity.hostPhotoURL = host.photoURL;
+  if (data.endTime) newActivity.endTime = data.endTime;
+  if (data.maxParticipants) newActivity.maxParticipants = data.maxParticipants;
+
+  // 1. Write the activity with sanitized payload
+  await set(newActivityRef, sanitizeFirebasePayload(newActivity));
 
   // 2. Automatically register host as first participant in /participants/<activityId>/<hostUid>
   const hostParticipantRef = ref(database, `participants/${activityId}/${host.uid}`);
-  await set(hostParticipantRef, {
+  const hostRecord: Record<string, any> = {
     joinedAt: Date.now(),
     displayName: host.displayName,
-    photoURL: host.photoURL || null,
-  });
+  };
+  if (host.photoURL) hostRecord.photoURL = host.photoURL;
+
+  await set(hostParticipantRef, hostRecord);
 
   return activityId;
 }
